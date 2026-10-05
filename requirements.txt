@@ -1,0 +1,31 @@
+# Core analysis pipeline (scripts/analyze_corpus.py) — this is all you need to
+# reproduce every number and figure in the paper.
+pandas
+numpy
+scipy
+matplotlib
+seaborn
+statsmodels
+vaderSentiment
+
+# Corpus construction (scripts/build_corpus.py)
+zstandard
+requests
+
+# Catalog extraction (scripts/llm_catalog.py, scripts/consolidate_catalog.py)
+# CUDA build: CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
+llama-cpp-python
+rapidfuzz
+tqdm
+
+# Second sentiment model (scripts/score_roberta.py) — large; skip if you do not
+# need the VADER-vs-RoBERTa robustness table.
+torch
+transformers
+
+# Dump download (scripts/download_offline.py) — optional, needs libtorrent.
+# Not required to reproduce results once data/reddit/subreddits24/*.zst exists.
+libtorrent
+
+# Development only (linting the scripts).
+pyflakes

@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+venv/
+data/
+docs/
+overleaf/workflow.pdf
+CLAUDE.md
+.idea/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.nav
+*.snm
+models/
