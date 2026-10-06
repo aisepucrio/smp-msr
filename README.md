@@ -18,19 +18,11 @@ pipeline).
 
 ---
 
-## TL;DR — does it run?
-
 ```bash
 make install     # dependencies
 make smoke       # full end-to-end run on SYNTHETIC data — no downloads needed
 make verify      # byte-compile + lint every script
 ```
-
-`make smoke` exercises both analysis scripts (corpus statistics, framing
-regression with cluster-robust SEs, the VADER-vs-RoBERTa comparison, all figures,
-and the whole survey leg) against a generated corpus in `data/mock/`. It touches
-no real data and writes nothing into `docs/figures/`. It proves the code runs; it
-proves nothing about the science.
 
 ---
 
