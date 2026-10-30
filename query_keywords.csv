@@ -1,0 +1,54 @@
+query_group,subgroup,term,match_type
+mental_health,Symptoms and care,burnout,substring
+mental_health,Symptoms and care,burned out,substring
+mental_health,Symptoms and care,exhausted,substring
+mental_health,Symptoms and care,overwhelmed,substring
+mental_health,Symptoms and care,anxiety,substring
+mental_health,Symptoms and care,stress,substring
+mental_health,Symptoms and care,fear,substring
+mental_health,Symptoms and care,depression,substring
+mental_health,Symptoms and care,imposter syndrome,substring
+mental_health,Symptoms and care,mental health,substring
+mental_health,Symptoms and care,therapy,substring
+mental_health,Symptoms and care,medication,substring
+mental_health,Working conditions,overtime,substring
+mental_health,Working conditions,quitting,substring
+mental_health,Working conditions,micromanagement,substring
+mental_health,Working conditions,work-life,substring
+mental_health,Working conditions,toxic,substring
+mental_health,Working conditions,hostile,substring
+mental_health,Workplace changes,RTO,whole_word
+mental_health,Workplace changes,return to office,substring
+productivity,General measurement terms,metric(s),substring
+productivity,General measurement terms,measure,substring
+productivity,General measurement terms,measurement,substring
+productivity,General measurement terms,productivity,substring
+productivity,"Delivery, reliability, and Agile metrics",DORA,whole_word
+productivity,"Delivery, reliability, and Agile metrics",four key,substring
+productivity,"Delivery, reliability, and Agile metrics",deployment frequency,substring
+productivity,"Delivery, reliability, and Agile metrics",lead time,substring
+productivity,"Delivery, reliability, and Agile metrics",change failure,substring
+productivity,"Delivery, reliability, and Agile metrics",MTTR,whole_word
+productivity,"Delivery, reliability, and Agile metrics",cycle time,substring
+productivity,"Delivery, reliability, and Agile metrics",throughput,substring
+productivity,"Delivery, reliability, and Agile metrics",flow metric,substring
+productivity,"Delivery, reliability, and Agile metrics",velocity,substring
+productivity,"Delivery, reliability, and Agile metrics",story points,substring
+productivity,"Delivery, reliability, and Agile metrics",burndown,substring
+productivity,"Delivery, reliability, and Agile metrics",SLA,whole_word
+productivity,"Delivery, reliability, and Agile metrics",SLO,whole_word
+productivity,"Delivery, reliability, and Agile metrics",SLI,whole_word
+productivity,Output and quality measures,lines of code,substring
+productivity,Output and quality measures,pull request,substring
+productivity,Output and quality measures,code coverage,substring
+productivity,Output and quality measures,tech debt,substring
+productivity,Output and quality measures,technical debt,substring
+productivity,Evaluation and goals,performance review,substring
+productivity,Evaluation and goals,OKR,whole_word
+productivity,Evaluation and goals,KPI,whole_word
+productivity,Evaluation and goals,benchmark,substring
+productivity,Evaluation and goals,tracking,substring
+productivity,Process and tools,scrum,substring
+productivity,Process and tools,sprint,substring
+productivity,Process and tools,kanban,substring
+productivity,Process and tools,Jira,whole_word

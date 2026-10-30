@@ -20,3 +20,4 @@ CLAUDE.md
 *.nav
 *.snm
 models/
+.DS_Store
