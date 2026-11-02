@@ -2,19 +2,22 @@
 # Run `make help` for the target list.
 
 PY      := python3
-CORPUS  := $(shell ls -t data/*_corpus.csv 2>/dev/null | head -1)
 MOCK    := data/mock/mock_corpus.csv
 ROBERTA := data/roberta_sentiment.jsonl
+MODEL   ?= models/gemma-3-4b-it-Q4_K_M.gguf
 
 .DEFAULT_GOAL := help
-.PHONY: help install smoke verify corpus figures catalog roberta survey lint clean clean-mock all
+.PHONY: help install install-full smoke verify download corpus figures catalog roberta survey lint clean clean-mock all
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install Python dependencies
+install: ## Install the analysis dependencies (enough for smoke, figures, survey)
 	$(PY) -m pip install -r requirements.txt
+
+install-full: ## Also install corpus/catalog/RoBERTa/download dependencies (heavy)
+	$(PY) -m pip install -r requirements-full.txt
 
 # ---------------------------------------------------------------------------
 # Verification (no real data needed)
@@ -28,7 +31,8 @@ smoke: ## End-to-end run of both analysis scripts against synthetic data
 		--roberta data/mock/mock_roberta_sentiment.jsonl \
 		--curated-catalog data/mock/_absent.csv \
 		--full-catalog data/mock/_absent.csv \
-		--metrics-csv data/mock/per_metric.csv
+		--metrics-csv data/mock/per_metric.csv \
+		--surveillance-review data/mock/_absent.csv
 	$(PY) scripts/analyze_survey.py \
 		--csv data/mock/mock_survey_results.csv \
 		--out data/mock/figures
@@ -45,16 +49,15 @@ verify: ## Byte-compile + lint every script
 download: ## Fetch the five subreddit dumps (~206 MB submissions, ~1.5 GB with comments)
 	$(PY) scripts/download_offline.py --comments
 
-corpus: ## Build data/<timestamp>_corpus.csv from the dumps
-	@test -n "$(CORPUS)" || { echo "no data/*_corpus.csv yet — run 'make download corpus'"; exit 1; }
-	@echo "using corpus: $(CORPUS)"
+corpus: ## Build data/<timestamp>_corpus.csv from the dumps (run 'make download' first)
+	$(PY) scripts/build_corpus.py
 
 figures: ## Recompute every paper number and figure from the real corpus
 	$(PY) scripts/analyze_corpus.py
 	@echo "figures -> docs/figures/"
 
-catalog: ## LLM open extraction of the metric catalog (needs llama-cpp-python)
-	$(PY) scripts/llm_catalog.py
+catalog: ## LLM open extraction + consolidation (needs llama-cpp-python and $(MODEL))
+	$(PY) scripts/llm_catalog.py --model $(MODEL)
 	$(PY) scripts/consolidate_catalog.py
 
 roberta: ## Score the framing-matched docs with the second sentiment model

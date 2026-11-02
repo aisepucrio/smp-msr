@@ -1,5 +1,5 @@
 """
-Single source of truth for the thesis results: reads the offline corpus
+Single source of truth for the Reddit results of the paper: reads the corpus
 (posts + comments), prints every number used in the text/tables, and regenerates
 all figures. Run from repo root:
 
@@ -31,7 +31,7 @@ from scipy.stats import chi2_contingency, kruskal
 import statsmodels.formula.api as smf
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-_ap = argparse.ArgumentParser(description="Analyse the Reddit corpus (thesis results).")
+_ap = argparse.ArgumentParser(description="Analyse the Reddit corpus (paper results).")
 _ap.add_argument("--corpus", default=None,
                  help="corpus CSV (default: newest data/*_corpus.csv)")
 _ap.add_argument("--out", default="docs/figures", help="figure output directory")
@@ -43,6 +43,9 @@ _ap.add_argument("--full-catalog", default="data/metricas_catalogadas.csv",
                  help="un-curated LLM catalog (used only for coverage validation)")
 _ap.add_argument("--metrics-csv", default="data/metricas_analise_sentimento.csv",
                  help="per-metric table output")
+_ap.add_argument("--surveillance-review", default="data/surveillance_manual_review.csv",
+                 help="manually reviewed employer-monitoring posts (id, employer_monitoring); "
+                      "without it the broad, unreviewed keyword count is used")
 _args = _ap.parse_args()
 
 OUT = _args.out
@@ -238,6 +241,35 @@ mu = smf.logit("neg ~ dora + scrum + C(subreddit) + C(year) + is_comment + log_l
 print(f"  robustness (full union, non-exclusive dummies): "
       f"dora OR={np.exp(mu.params['dora']):.3f} p={mu.pvalues['dora']:.2e}")
 
+# per-community check: does the system-vs-individual gap hold within each subreddit?
+# Gap on the non-exclusive categories; the logit is the primary spec refitted inside one
+# community (same controls minus subreddit, same thread clustering).
+print("\n  WITHIN-COMMUNITY CHECK (system/pipeline vs person/output)")
+dora_by_sub = cat_frames["dora"]["subreddit"].value_counts()
+top2 = dora_by_sub.head(2)
+print(f"  system/pipeline messages in the top-2 communities ({', '.join(top2.index)}): "
+      f"{top2.sum():,} of {len(cat_frames['dora']):,} ({top2.sum()/len(cat_frames['dora'])*100:.0f}%)")
+for s_ in sorted(df["subreddit"].unique()):
+    d_ = cat_frames["dora"][cat_frames["dora"]["subreddit"] == s_]
+    i_ = cat_frames["individual"][cat_frames["individual"]["subreddit"] == s_]
+    gap = ((i_["compound"] < -0.05).mean() - (d_["compound"] < -0.05).mean()) * 100 if len(d_) else float("nan")
+    line = f"    r/{s_:20s} system N={len(d_):4d}  gap(person - system)={gap:+5.1f} pp"
+    g_ = excl[excl["subreddit"] == s_]
+    term = "C(framing, Treatment('individual'))[T.dora]"
+    if (g_["framing"] == "dora").sum() > 0:
+        try:
+            m_ = smf.logit("neg ~ C(framing, Treatment('individual')) + C(year) + is_comment"
+                           " + log_len", data=g_).fit(cov_type="cluster",
+                                                      cov_kwds={"groups": g_["thread_id"]}, disp=0)
+            ci_ = np.exp(m_.conf_int().loc[term])
+            line += (f"  OR={np.exp(m_.params[term]):.2f} [{ci_[0]:.2f}, {ci_[1]:.2f}]"
+                     f"  p={m_.pvalues[term]:.3f}")
+        except Exception as e:  # too few cases to estimate
+            line += f"  (logit not estimable: {type(e).__name__})"
+    else:
+        line += "  (no exclusive system/pipeline messages)"
+    print(line)
+
 # ---------- 1c. second sentiment model (VADER vs RoBERTa) ----------
 ROBERTA = _args.roberta
 print("\n" + "=" * 60)
@@ -334,7 +366,29 @@ def count_posts(rx):
     return posts["text"].str.contains(rx, regex=True, na=False).sum()
 print("\n" + "=" * 60)
 print("METRIC-ADJACENT (posts)")
-print("surveillance/tracking:", count_posts(r"track|monitor|surveillance|spy"))
+print("surveillance/tracking (broad keyword rule, unreviewed):",
+      count_posts(r"track|monitor|surveillance|spy"))
+# The broad rule mostly matches unrelated senses (infrastructure monitoring, "on track",
+# issue tracking, computer monitors). The paper reports the manually reviewed subset.
+SURV_REVIEW = _args.surveillance_review
+surv_verified = None
+if os.path.exists(SURV_REVIEW):
+    rv = pd.read_csv(SURV_REVIEW, dtype={"id": str})
+    rv["employer_monitoring"] = (rv["employer_monitoring"].astype(str).str.strip().str.lower()
+                                 .isin(("true", "1", "yes")))
+    surv_verified = posts[posts["id"].isin(rv.loc[rv["employer_monitoring"], "id"])]
+    print(f"employer monitoring (manually reviewed, {len(rv)} candidates reviewed): "
+          f"{len(surv_verified)} posts")
+    print("  by year:", surv_verified.groupby("year").size().to_dict())
+    print("  by subreddit:", surv_verified["subreddit"].value_counts().to_dict())
+    print(f"  median comments: {surv_verified['num_comments'].median():.0f} "
+          f"(all posts: {posts['num_comments'].median():.0f})")
+    top_ = surv_verified.sort_values("score", ascending=False).head(1)
+    if len(top_):
+        print(f"  highest-scoring: {int(top_['score'].iloc[0]):,} points")
+else:
+    print(f"[note] {SURV_REVIEW} not found — no reviewed employer-monitoring count; "
+          "the figure falls back to the broad keyword rule")
 print("PIP:", count_posts(r"\bpip\b|performance improvement plan"))
 rto = posts[posts["text"].str.contains(r"\brto\b|return to office", regex=True, na=False)]
 print("RTO by year:", rto.groupby("year").size().to_dict())
@@ -394,7 +448,7 @@ regex_df = (pd.DataFrame([{"nome": k, "tipo": TYPE.get(k, "Concept"), "posts": v
             .sort_values("posts", ascending=False).reset_index(drop=True))
 
 # --- (b) LLM catalog: open extraction over posts (consolidate_catalog.py), then a manual
-# curation pass that drops noise, keeps thesis-relevant items, and adds the `categoria`
+# curation pass that drops noise, keeps study-relevant items, and adds the `categoria`
 # column (MentalHealth / Productivity / Both). The CURATED file is the catalog OF RECORD
 # for the figure and the "what is discussed" numbers; the full un-curated LLM catalog is
 # loaded separately (step c) only for the coverage validation. Neither is overwritten here
@@ -427,7 +481,7 @@ print(f"CATALOG — source: {cat_source}")
 print(cat_df.head(15).to_string(index=False))
 
 # categoria breakdown (present only in the curated catalog) — the productivity vs
-# mental-health split that the thesis hypothesis turns on.
+# mental-health split that the study hypothesis turns on.
 if "categoria" in cat_df:
     print("\nby categoria (distinct items / summed post mentions):")
     for c, g in cat_df.groupby("categoria"):
@@ -482,6 +536,26 @@ emerging_10 = emerging[emerging["posts"] >= 10] if "posts" in emerging else emer
 print(f"  newly discovered (emerging):    {len(emerging)} items "
       f"({len(emerging_10)} with >=10 posts)")
 print(f"    top emerging (>=10 posts):    {', '.join(emerging_10.head(10)['nome'])}")
+
+# un-curated comparison of systemic vs individual-output items: the manual curation
+# removed most of the DORA family, so the curated catalog understates the systemic share.
+SYSTEMIC_ITEMS = ["DORA", "Lead Time", "Deployment Frequency", "Change Failure Rate",
+                  "Cycle Time", "Throughput", "MTTR"]
+INDIVIDUAL_ITEMS = ["Lines of Code", "Pull Requests", "Story Points", "Velocity", "OKR",
+                    "KPI", "Number of Commits"]
+if os.path.exists(FULL_LLM_CATALOG):
+    full_counts = cov_df.set_index("nome")["posts"]
+    sys_sum = int(full_counts.reindex(SYSTEMIC_ITEMS).fillna(0).sum())
+    ind_sum = int(full_counts.reindex(INDIVIDUAL_ITEMS).fillna(0).sum())
+    print("\n" + "-" * 60)
+    print("SYSTEMIC vs INDIVIDUAL-OUTPUT ITEMS (un-curated catalog, post-mentions)")
+    print(f"  systemic {sys_sum:,}  vs  individual-output {ind_sum:,}  "
+          f"(ratio 1:{ind_sum / max(sys_sum, 1):.1f})")
+    kept = set(cat_df["nome"])
+    print("  systemic items in the curated catalog:",
+          {k: int(full_counts.get(k, 0)) for k in SYSTEMIC_ITEMS if k in kept})
+    print("  systemic items removed by curation:",
+          {k: int(full_counts.get(k, 0)) for k in SYSTEMIC_ITEMS if k not in kept})
 
 # ---------- 7. metric-MH intersection (posts) ----------
 mh_posts = posts[posts["query_group"] == "mental_health"].copy()
@@ -671,16 +745,23 @@ fig.savefig(f"{OUT}/metric_catalog.pdf"); plt.close()
 print(f"[fig] metric_catalog.pdf (curated/{color_key})")
 
 # surveillance / rto
-track_yr = posts[posts["text"].str.contains(r"track|monitor|surveillance|spy", regex=True, na=False)].groupby("year").size()
+if surv_verified is not None:
+    track_yr = surv_verified.groupby("year").size()
+    surv_label = "Employer monitoring (manually reviewed)"
+    surv_title = "Employer Monitoring & RTO Discussion Volume by Year"
+else:
+    track_yr = posts[posts["text"].str.contains(r"track|monitor|surveillance|spy", regex=True, na=False)].groupby("year").size()
+    surv_label = "Surveillance / Tracking (keyword rule, unreviewed)"
+    surv_title = "Surveillance & RTO Discussion Volume by Year"
 rto_yr = rto.groupby("year").size()
 fig, ax = plt.subplots(figsize=(8, 4))
 years = sorted(set(track_yr.index) | set(rto_yr.index))
 years = [y for y in years if 2021 <= y <= 2024]
 x = np.arange(len(years)); w = .35
-ax.bar(x-w/2, [track_yr.get(y, 0) for y in years], w, label="Surveillance / Tracking", color=PALETTE["individual"], edgecolor="white")
+ax.bar(x-w/2, [track_yr.get(y, 0) for y in years], w, label=surv_label, color=PALETTE["individual"], edgecolor="white")
 ax.bar(x+w/2, [rto_yr.get(y, 0) for y in years], w, label="Return to Office (RTO)", color=PALETTE["scrum"], edgecolor="white")
 ax.set_xticks(x); ax.set_xticklabels(years); ax.set_xlabel("Year"); ax.set_ylabel("Post Count")
-ax.set_title("Surveillance & RTO Discussion Volume by Year", fontweight="bold")
+ax.set_title(surv_title, fontweight="bold")
 ax.legend(); ax.grid(True, axis="y", ls="--", alpha=.4); fig.tight_layout()
 fig.savefig(f"{OUT}/surveillance_rto_trends.pdf"); plt.close()
 print("[fig] surveillance_rto_trends.pdf")

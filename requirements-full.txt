@@ -1,0 +1,21 @@
+# Full pipeline: the analysis requirements plus everything needed to rebuild the
+# corpus, the LLM catalog and the RoBERTa labels from the raw dumps. These packages are
+# large and two of them (llama-cpp-python, libtorrent) need native builds; they are not
+# needed to reproduce the results from an existing corpus or from the data release.
+-r requirements.txt
+
+# Corpus construction (scripts/build_corpus.py)
+zstandard
+
+# Catalog extraction (scripts/llm_catalog.py, scripts/consolidate_catalog.py)
+# CUDA build: CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
+llama-cpp-python
+rapidfuzz
+tqdm
+
+# Second sentiment model (scripts/score_roberta.py)
+torch
+transformers
+
+# Dump download (scripts/download_offline.py)
+libtorrent

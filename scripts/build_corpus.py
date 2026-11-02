@@ -5,7 +5,7 @@ dumps. Unlike the old top-N collector, this keeps EVERY matching document in the
 
     python scripts/download_offline.py            # fetch the .zst dumps first
     python scripts/build_corpus.py                # -> data/<timestamp>_corpus.csv
-    # add --no-comments to build posts only
+    # add --no-comments to build posts only, --out to choose the output file
 
 Output: data/<timestamp>_corpus.csv with columns
     id, type, subreddit, query_group, title, selftext, author_hash,
@@ -122,11 +122,13 @@ def main():
     ap.add_argument("--year-start", type=int, default=2021)
     ap.add_argument("--year-end", type=int, default=2024)
     ap.add_argument("--no-comments", action="store_true")
+    ap.add_argument("--out", default=None,
+                    help="output CSV (default: data/<timestamp>_corpus.csv)")
     args = ap.parse_args()
 
-    os.makedirs("data", exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out = f"data/{stamp}_corpus.csv"
+    out = args.out or f"data/{stamp}_corpus.csv"
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     cols = ["id", "type", "subreddit", "query_group", "title", "selftext",
             "author_hash", "score", "num_comments", "created_utc", "link_id"]
 

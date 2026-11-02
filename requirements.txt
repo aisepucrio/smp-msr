@@ -1,31 +1,16 @@
-# Core analysis pipeline (scripts/analyze_corpus.py) — this is all you need to
-# reproduce every number and figure in the paper.
-pandas
-numpy
-scipy
-matplotlib
-seaborn
-statsmodels
-vaderSentiment
-
-# Corpus construction (scripts/build_corpus.py)
-zstandard
-requests
-
-# Catalog extraction (scripts/llm_catalog.py, scripts/consolidate_catalog.py)
-# CUDA build: CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
-llama-cpp-python
-rapidfuzz
-tqdm
-
-# Second sentiment model (scripts/score_roberta.py) — large; skip if you do not
-# need the VADER-vs-RoBERTa robustness table.
-torch
-transformers
-
-# Dump download (scripts/download_offline.py) — optional, needs libtorrent.
-# Not required to reproduce results once data/reddit/subreddits24/*.zst exists.
-libtorrent
+# Analysis: everything needed to reproduce the paper's numbers and figures from the
+# corpus (or from the data release) and to run `make smoke` / `make verify`.
+# vaderSentiment is pinned because its lexicon determines every sentiment score.
+# The other lower bounds are the versions the results were last verified with
+# (Python 3.13, pandas 3.0.5, numpy 2.5.3, scipy 1.18.1, matplotlib 3.11.2,
+# seaborn 0.13.2, statsmodels 0.15.0).
+vaderSentiment==3.3.2
+pandas>=2.2
+numpy>=1.26
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+statsmodels>=0.14
 
 # Development only (linting the scripts).
 pyflakes

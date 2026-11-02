@@ -3,7 +3,7 @@
 
 Single source of truth for the survey numbers and figures, mirroring
 analyze_corpus.py for the Reddit corpus. Prints every number reported in the
-thesis and (re)generates the survey figures into docs/figures/.
+paper and (re)generates the survey figures into docs/figures/.
 
 The survey is the second, independent leg of the mixed-methods design: where the
 corpus observes what developers say unprompted, the survey asks them directly

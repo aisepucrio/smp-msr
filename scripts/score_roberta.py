@@ -1,7 +1,7 @@
 """Score the framing-matched corpus docs with a second sentiment model (RoBERTa).
 
-The examination board asked for a second model to compare against VADER, with an
-agreement rate between the two. We score only the documents that match one of the
+A second, independent sentiment model checks that the framing result does not depend
+on VADER, and gives the agreement rate between the two. We score only the documents that match one of the
 three metric-framing regexes, since that is the population the framing finding
 rests on; analyze_corpus.py picks the output up (if present) and prints the
 agreement numbers.
