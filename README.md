@@ -126,14 +126,13 @@ scripts/
   consolidate_catalog.py canonicalise + aggregate extractions
   score_roberta.py       second sentiment model
   generate_mock_data.py  synthetic corpus/survey for smoke tests
-  legacy/                superseded scripts — see scripts/legacy/README.md
 Makefile                 pipeline driver (`make help`)
 requirements.txt
 ```
 
-**`scripts/legacy/` is archived, not runnable.** Two of those scripts write to
-the same filenames as the published figures and table, so running them silently
-destroys the paper's artifacts. The README there explains each one.
+Superseded scripts from earlier drafts are kept, for provenance only, on the
+`legacy` branch (`scripts/legacy/`). They are not part of the reproduction path, and
+two of them overwrite the published figures and table if run; see the README there.
 
 ---
 

@@ -54,7 +54,7 @@ def main():
     if not selected:
         raise SystemExit(
             f"No files in the torrent matched {SUBS} x {kinds}. The torrent layout "
-            f"has probably changed; inspect it with scripts/legacy/generate_torrent_cmd.py "
+            f"has probably changed; inspect it by hand (e.g. with scripts/legacy/generate_torrent_cmd.py on the legacy branch) "
             f"instead of guessing --select indices.")
 
     print(f"Selecting {len(selected)} files ({total/1048576:.0f} MB):")
