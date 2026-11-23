@@ -7,8 +7,8 @@ paper and (re)generates the survey figures into docs/figures/.
 
 The survey is the second, independent leg of the mixed-methods design: where the
 corpus observes what developers say unprompted, the survey asks them directly
-(RQ1: which metrics/practices are used and how effective they are perceived to
-be; RQ2: which measures are desirable but missing). N is small (a convenience
+(RQ3: which metrics/practices are used and how effective they are perceived to
+be; RQ4: which measures are desirable but missing). N is small (a convenience
 sample), so we report descriptive statistics, not inferential tests.
 
 Run from the repo root:  python scripts/analyze_survey.py
@@ -172,7 +172,7 @@ def report(df):
         for k, v in counts(col(df, f), order).items():
             print(f"    {v:2d} ({v/n*100:4.1f}%)  {k}")
 
-    hr("RQ1 — PRODUCTIVITY METRICS ADOPTED")
+    hr("RQ3 — PRODUCTIVITY METRICS ADOPTED (Q8, Q8a; Table VII)")
     used = multiselect_counts(col(df, "metrics_used"), PROD_OPTIONS)
     for o, s in sorted(zip(PROD_OPTIONS, PROD_SHORT),
                        key=lambda p: -used[p[0]]):
@@ -182,7 +182,7 @@ def report(df):
     for lab, k, m in likert(df, col(df, "metrics_used"), PROD_RATED):
         print(f"    {lab:28s} n={k:2d}  " + (f"mean={m:.1f}" if k else "n/a"))
 
-    hr("RQ1 — MENTAL-HEALTH TRACKING & PRACTICES")
+    hr("RQ3 — MENTAL-HEALTH TRACKING & PRACTICES (Q11, Q12, Q12a; Table VII)")
     print("\n  Does the company track developer well-being?")
     for k, v in counts(col(df, "mh_tracking")).items():
         print(f"    {v:2d} ({v/n*100:4.1f}%)  {k}")
@@ -195,7 +195,7 @@ def report(df):
     for lab, k, m in likert(df, col(df, "mh_practices"), MH_RATED):
         print(f"    {lab:24s} n={k:2d}  " + (f"mean={m:.1f}" if k else "n/a"))
 
-    hr("CORE HYPOTHESIS — PRODUCTIVITY <-> MENTAL HEALTH ARE RELATED")
+    hr("Q14 — PRODUCTIVITY <-> MENTAL HEALTH ARE RELATED")
     s = pd.to_numeric(col(df, "relatedness"), errors="coerce").dropna()
     print("  (1=completely independent ... 5=inseparable)")
     print(f"  n={len(s)}  mean={s.mean():.2f}  median={s.median():.0f}  "

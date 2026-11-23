@@ -23,7 +23,8 @@ What it does
   * RoBERTa labels, LLM catalog labels and the manual review of employer-monitoring
     posts are re-keyed with the same mapping, so
     analyze_corpus.py runs on the release unchanged
-  * survey       -> the optional e-mail column is emptied (kept, so column positions hold)
+  * survey       -> the optional e-mail column is emptied (kept, so column positions hold),
+                    and links in the question headers (the consent form's) are dropped
   * the curated / full catalogs and the per-metric table carry no identifiers and are
     copied as they are
 
@@ -157,6 +158,9 @@ def main():
     sv = pd.read_csv(a.survey)
     email_cols = [c for c in sv.columns if "email" in c.lower() or "e-mail" in c.lower()]
     sv[email_cols] = ""
+    # the consent question links to a document that names the researchers
+    sv.columns = [re.sub(r"\[([^\]]*)\]\(https?://[^)\s]*\)", "[link omitted]", c)
+                  for c in sv.columns]
     sv.to_csv(os.path.join(a.out_dir, "survey_results.csv"), index=False)
     print(f"[survey] {len(sv)} responses, blanked {email_cols}")
 

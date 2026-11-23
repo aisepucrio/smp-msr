@@ -38,7 +38,7 @@ _ap.add_argument("--out", default="docs/figures", help="figure output directory"
 _ap.add_argument("--roberta", default="data/roberta_sentiment.jsonl",
                  help="second-model labels; skipped if missing")
 _ap.add_argument("--curated-catalog", default="data/metricas_catalogadas_filtradas.csv",
-                 help="curated LLM catalog (catalog of record for Fig. 2)")
+                 help="curated LLM catalog (catalog of record for Fig. 1)")
 _ap.add_argument("--full-catalog", default="data/metricas_catalogadas.csv",
                  help="un-curated LLM catalog (used only for coverage validation)")
 _ap.add_argument("--metrics-csv", default="data/metricas_analise_sentimento.csv",
@@ -124,8 +124,8 @@ def category_frame(rx):
 
 
 print("\n" + "=" * 60)
-print("SENTIMENT BY FRAMING (full corpus: posts + comments)")
-print("Table 4.2 columns -> Full: N / Sent / Neg ; Posts: N / Sent / Neg ; Comments: N / Sent / Neg")
+print("SENTIMENT BY FRAMING (full corpus: posts + comments) — Table III")
+print("Table III columns -> Full: N / Sent / Neg ; Posts: N / Sent / Neg ; Comments: N / Sent / Neg")
 framing_rows = []
 cat_frames = {}
 for cat, rx in RX.items():
@@ -193,7 +193,7 @@ print(f"  chi-square 2x2 POSTS ONLY (DORA vs Individual): chi2={chi2p:.1f}, dof=
 # thread (Cameron & Miller 2015). Restricted to docs matching exactly one framing
 # so the framing is a clean categorical.
 print("\n" + "-" * 60)
-print("REGRESSION  neg ~ framing + subreddit + year + is_comment + log_len")
+print("REGRESSION (Table IV)  neg ~ framing + subreddit + year + is_comment + log_len")
 print("            (SEs clustered by thread; docs matching exactly one framing)")
 
 allf = pd.concat([cat_frames[c].assign(framing=c) for c in RX])
@@ -244,16 +244,16 @@ print(f"  robustness (full union, non-exclusive dummies): "
 # per-community check: does the system-vs-individual gap hold within each subreddit?
 # Gap on the non-exclusive categories; the logit is the primary spec refitted inside one
 # community (same controls minus subreddit, same thread clustering).
-print("\n  WITHIN-COMMUNITY CHECK (system/pipeline vs person/output)")
+print("\n  WITHIN-COMMUNITY CHECK (team-level vs individual-level, Section IV-B.2)")
 dora_by_sub = cat_frames["dora"]["subreddit"].value_counts()
 top2 = dora_by_sub.head(2)
-print(f"  system/pipeline messages in the top-2 communities ({', '.join(top2.index)}): "
+print(f"  team-level messages in the top-2 communities ({', '.join(top2.index)}): "
       f"{top2.sum():,} of {len(cat_frames['dora']):,} ({top2.sum()/len(cat_frames['dora'])*100:.0f}%)")
 for s_ in sorted(df["subreddit"].unique()):
     d_ = cat_frames["dora"][cat_frames["dora"]["subreddit"] == s_]
     i_ = cat_frames["individual"][cat_frames["individual"]["subreddit"] == s_]
     gap = ((i_["compound"] < -0.05).mean() - (d_["compound"] < -0.05).mean()) * 100 if len(d_) else float("nan")
-    line = f"    r/{s_:20s} system N={len(d_):4d}  gap(person - system)={gap:+5.1f} pp"
+    line = f"    r/{s_:20s} team N={len(d_):4d}  gap(individual - team)={gap:+5.1f} pp"
     g_ = excl[excl["subreddit"] == s_]
     term = "C(framing, Treatment('individual'))[T.dora]"
     if (g_["framing"] == "dora").sum() > 0:
@@ -267,7 +267,7 @@ for s_ in sorted(df["subreddit"].unique()):
         except Exception as e:  # too few cases to estimate
             line += f"  (logit not estimable: {type(e).__name__})"
     else:
-        line += "  (no exclusive system/pipeline messages)"
+        line += "  (no exclusive team-level messages)"
     print(line)
 
 # ---------- 1c. second sentiment model (VADER vs RoBERTa) ----------
@@ -304,7 +304,7 @@ else:
     # per-framing negativity under each model (exclusive subset -> tab:model-agreement)
     me = with_roberta(excl)
     me["neg_roberta"] = (me["roberta"] == "negative").astype(int)
-    print("  negativity by framing (exclusive subset):")
+    print("  negativity by framing (exclusive subset, Table VI):")
     for c in RX:
         g = me[me["framing"] == c]
         print(f"    {c:11s} N={len(g):6,}  VADER={g['neg'].mean()*100:4.1f}%"
@@ -322,7 +322,7 @@ METRICS = {
     "Commits / PRs":           r"number of commits?|commit count|pull request count|\bpr count\b",
 }
 print("\n" + "=" * 60)
-print("SENTIMENT PER METRIC (full corpus)")
+print("SENTIMENT PER METRIC (full corpus) — Table V")
 metric_rows = []
 for name, pat in METRICS.items():
     sub = df[df["text"].str.contains(pat, regex=True, na=False)].copy()
@@ -332,6 +332,7 @@ for name, pat in METRICS.items():
                         "Média de Sentimento (VADER)": round(m, 3),
                         "Proporção de Negatividade (%)": round(neg * 100, 1)})
     print(f"{name:26s} N={n:6d}  sent={m:+.3f}  neg={neg*100:4.1f}%")
+os.makedirs(os.path.dirname(_args.metrics_csv) or ".", exist_ok=True)  # data/ is not in a fresh clone
 pd.DataFrame(metric_rows).to_csv(_args.metrics_csv, index=False)
 print(f"[csv] {_args.metrics_csv}")
 
@@ -355,7 +356,7 @@ comm_df = pd.DataFrame(comm)
 pst = posts[posts["year"] >= 2021]
 yr = pst.groupby(["year", "query_group"]).size().unstack(fill_value=0)
 print("\n" + "=" * 60)
-print("TEMPORAL (posts by year/group)")
+print("TEMPORAL (posts by year/group) — Fig. 2")
 print(yr)
 for g in ["mental_health", "metrics_productivity"]:
     if g in yr.columns:
@@ -477,7 +478,7 @@ else:  # fall back to the regex baseline if no LLM catalog has been built yet
     cat_df["emerging"] = False
     cat_source = "regex baseline (LLM catalog not found)"
 print("\n" + "=" * 60)
-print(f"CATALOG — source: {cat_source}")
+print(f"CATALOG (Fig. 1) — source: {cat_source}")
 print(cat_df.head(15).to_string(index=False))
 
 # categoria breakdown (present only in the curated catalog) — the productivity vs
